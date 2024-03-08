@@ -28,10 +28,18 @@
                 <img src="@conversationDtoMember.Avatar" class="rounded-circle me-1" alt="@conversationDtoMember.OtherUserId" width="40" height="40" />
                 <div class="flex-grow-1 ms-3">
                     @conversationDtoMember.OtherUserName
-                    <div class="small"><span class="fas fa-circle chat-online"></span> </div>
+                    <div class="small" id="user_@conversationDtoMember.OtherUserId">
+@*                         <span class="small" id="user_@conversationDtoMember.OtherUserId">Offline</span>
+ *@                    </div>
+
                 </div>
             </div>
         </a>
         <hr />
     }
+
 }
+
+<script src="~/lib/jquery/dist/jquery.js"></script>
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
+<script src="~/js/OnlineStatus.js"></script>

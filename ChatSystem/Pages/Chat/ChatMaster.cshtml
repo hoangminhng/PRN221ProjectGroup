@@ -14,11 +14,7 @@
  *@        <div class="col-12 col-md-2 border-end chat-list" id="conversation-list">
             @if(Model.ConversationDtoList.Count < 1)
             {
-                
             }else{
-
-               
-
                 <script>
                     var conversationIdsString = [
                     @foreach (var conversationDtoMember in Model.ConversationDtoList)
@@ -194,6 +190,12 @@
 
 
 
+
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<script src="~/lib/signalr/dist/browser/signalr.js"></script>
+<script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
+<script src="~/js/OnlineStatus.js"></script>
+<script src="~/js/signalr.js"></script>
 
 <script>
     //String.prototype.nl2br = function () {

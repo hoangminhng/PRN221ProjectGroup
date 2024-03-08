@@ -293,9 +293,7 @@ namespace ChatSystem.Pages.Chat
 
                 if (participant != null)
                 {
-                    participant.status = 0;
-
-                    _participantRepository.UpdateParticipants(participant);
+                    _participantRepository.DeleteParticipant(participant);
                 }
                 TempData["success"] = "User kicked from the group successfully.";
                 return RedirectToPage("/Chat/ChatMaster", new { id = conversationId });

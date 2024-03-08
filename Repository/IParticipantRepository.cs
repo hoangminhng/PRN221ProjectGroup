@@ -7,10 +7,9 @@ namespace Repository
         User GetOtherParticipant(int conversationId, int userId);
         Participants GetParticipantByConversationIdAndUserId(int conversationId, int userId);
         public void UpdateParticipants(Participants participants);
-
-
         void OutConversation(int conversationId, int userId);
         bool IsLastAdminInConversation(int conversationId, int userId);
         bool IsLastMemberInConversation(int conversationId);
+        public void DeleteParticipant(Participants participants);
     }
 }
