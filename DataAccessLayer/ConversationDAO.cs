@@ -33,7 +33,7 @@ namespace DataAccessLayer
             using (var context = new DataContext())
             {
                 var participants = context.Participants
-                    .Where(p => p.UserId == userId)
+                    .Where(p => p.UserId == userId && p.status == 1)
                     .ToList();
 
                 foreach (Participants participant in participants)
@@ -44,6 +44,26 @@ namespace DataAccessLayer
             }
             return conversations;
         }
+        public Conversation GetConversationById(int conversationId, int userId)
+        {
+            using (var context = new DataContext())
+            {
+                Conversation conversation = context.Conversations.Include(c => c.Participants).FirstOrDefault(c => c.ConversationId == conversationId);
+                if (conversation == null)
+                {
+                    return null;
+                }
+                foreach (Participants participant in conversation.Participants)
+                {
+                    if (participant.UserId == userId && participant.status == 1)
+                    {
+                        return conversation;
+                    }
+                }
+            }
+            return null;
+        }
+
         public Conversation GetConversationById(int conversationId)
         {
             return GetAll().FirstOrDefault(c => c.ConversationId == conversationId);
@@ -54,13 +74,13 @@ namespace DataAccessLayer
             List<Conversation> groupConversations = new List<Conversation>();
             using (var context = new DataContext())
             {
-                 groupConversations = context.Conversations
-                .Where(c => c.UserId == userId && c.isGroup)
-                .ToList();
+                groupConversations = context.Conversations
+               .Where(c => c.UserId == userId && c.isGroup)
+               .ToList();
             }
             return groupConversations;
         }
-        
+
 
         public Conversation GetConversationAndParticipantById(int conversationId)
         {

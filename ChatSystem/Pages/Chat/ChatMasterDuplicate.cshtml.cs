@@ -23,7 +23,7 @@ namespace ChatSystem.Pages.Chat
         public ChatMasterDuplicateModel(IConversationRepository conversationRepository,
             IParticipantRepository participantRepository,
             IUserRepository userRepository,
-            IMapper mapper, IMessageRepository messageRepository, 
+            IMapper mapper, IMessageRepository messageRepository,
             IFriendRepository friendRepository,
             IPhotoRepository photoRepository)
         {
@@ -107,18 +107,20 @@ namespace ChatSystem.Pages.Chat
 
         public IActionResult LoadConversation(int conversationId)
         {
-            currentConversation = _conversationRepository.GetConversationById(conversationId);
+
 
             var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
             int userId = int.Parse(idClaim.Value);
+
+            currentConversation = _conversationRepository.GetConversationById(conversationDto.ConversationId, userId);
+
             if (currentConversation == null)
             {
+                TempData["error"] = "You are no longer in this conversation";
                 return Page();
             }
-            if (!_conversationRepository.IsUserInConversation(conversationId, userId))
-            {
-                return Page();
-            }
+
+
             var user = _userRepository.GetUserWithPhoto(userId);
             if (user == null)
             {
@@ -177,7 +179,7 @@ namespace ChatSystem.Pages.Chat
             try
             {
                 var participant = _participantRepository.GetParticipantByConversationIdAndUserId(conversationId, userId);
-                
+
                 if (participant != null)
                 {
                     participant.status = 1;

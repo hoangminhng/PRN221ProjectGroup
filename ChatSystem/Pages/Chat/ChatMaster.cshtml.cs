@@ -120,40 +120,23 @@ namespace ChatSystem.Pages.Chat
 
         }
 
-        public IActionResult OnGetAgain(int conversationId)
+        public IActionResult OnGetLoadConversationList()
         {
-            try
+            var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
+            int userId = int.Parse(idClaim.Value);
+
+            List<Conversation> conversationList = _conversationRepository.GetAllUserConversation(userId);
+            List<Conversation> conversationOrderList = conversationList.OrderByDescending(c => _messageRepository.GetLastestMessageFromConversation(c).DateSend.Ticks).ThenByDescending(c => c.CreateAt.Ticks).ToList();
+            //List<Conversation> conversationOrderList = conversationList.OrderByDescending(c => c.CreateAt.Ticks).ToList();
+
+            foreach (var conversation in conversationOrderList)
             {
-                var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
+                ConversationDto conversationDto = MapConversationToDto(conversation, userId);
 
-                if (idClaim != null)
-                {
-                    ConversationDtoList = new List<ConversationDto>();
-                    int userId = int.Parse(idClaim.Value);
-
-                    List<Conversation> conversationList = _conversationRepository.GetAllUserConversation(userId);
-                    List<Conversation> conversationOrderList = conversationList.OrderByDescending(c => _messageRepository.GetLastestMessageFromConversation(c).DateSend.Ticks).ThenByDescending(c => c.CreateAt.Ticks).ToList();
-                    //List<Conversation> conversationOrderList = conversationList.OrderByDescending(c => c.CreateAt.Ticks).ToList();
-
-                    foreach (var conversation in conversationOrderList)
-                    {
-                        ConversationDto conversationDto = MapConversationToDto(conversation, userId);
-
-                        ConversationDtoList.Add(conversationDto);
-                    }
-
-                    LoadConversation((int)conversationId);
-
-                    return Page();
-                }
-                return Page();
-
-            }
-            catch (Exception ex)
-            {
-                return Page();
+                ConversationDtoList.Add(conversationDto);
             }
 
+            return Partial("_ChatConversationList", ConversationDtoList);
         }
 
         public IActionResult OnGetLoadMessage(int conversationId)
@@ -161,10 +144,17 @@ namespace ChatSystem.Pages.Chat
             var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
             int userId = int.Parse(idClaim.Value);
 
-            GetConversationDetail(conversationId);
+            currentConversation = _conversationRepository.GetConversationById(conversationId, userId);
+
+            if (currentConversation == null)
+            {
+                TempData["error"] = "You are no longer in this conversation";
+                return Page();
+            }
+            GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationId);
+
 
             UserDto = _userRepository.GetUserDtoWithPhoto(userId);
-            GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationId);
             MessageDtoList = _messageRepository.GetMessagesFromConversation(currentConversation, GroupChatParticipants);
             ChatContentModel = new ChatContentModelDto
             {
@@ -179,44 +169,63 @@ namespace ChatSystem.Pages.Chat
         {
             var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
             int userId = int.Parse(idClaim.Value);
-            if (!MessageContent.IsNullOrEmpty())
+
+            currentConversation = _conversationRepository.GetConversationById(conversationDto.ConversationId, userId);
+
+            if (currentConversation == null)
             {
-                Message message = new Message();
+                TempData["error"] = "You are no longer in this conversation";
+                conversationDto = null;
 
-                message.ConversationId = conversationDto.ConversationId;
-                message.SenderId = userId;
-                message.SenderDelete = false;
-                message.Content = MessageContent;
-
-                _messageRepository.Create(message);
+                OnGet();
             }
-
-            await _messageHubContext.Clients.All.SendAsync("OnSendMessage", conversationDto.ConversationId);
-
-            GetConversationDetail(conversationDto.ConversationId);
-
-            UserDto = _userRepository.GetUserDtoWithPhoto(userId);
-            GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationDto.ConversationId);
-            MessageDtoList = _messageRepository.GetMessagesFromConversation(currentConversation, GroupChatParticipants);
-            ChatContentModel = new ChatContentModelDto
+            else
             {
-                MessageDtoList = MessageDtoList,
-                UserDto = UserDto
-            };
+                if (!MessageContent.IsNullOrEmpty())
+                {
+                    Message message = new Message();
+
+                    message.ConversationId = conversationDto.ConversationId;
+                    message.SenderId = userId;
+                    message.SenderDelete = false;
+                    message.Content = MessageContent;
+
+                    _messageRepository.Create(message);
+                }
+
+                await _messageHubContext.Clients.Group(conversationDto.ConversationId.ToString()).SendAsync("OnSendMessageInConversation", conversationDto.ConversationId);
+                await _messageHubContext.Clients.All.SendAsync("OnNeedToUploadConversationList", conversationDto.ConversationId);
+
+                GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationDto.ConversationId);
+
+
+                UserDto = _userRepository.GetUserDtoWithPhoto(userId);
+                GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationDto.ConversationId);
+                MessageDtoList = _messageRepository.GetMessagesFromConversation(currentConversation, GroupChatParticipants);
+                ChatContentModel = new ChatContentModelDto
+                {
+                    MessageDtoList = MessageDtoList,
+                    UserDto = UserDto
+                };
+            }
         }
 
         public IActionResult LoadConversation(int conversationId)
         {
-            currentConversation = _conversationRepository.GetConversationById(conversationId);
-
             var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
             int userId = int.Parse(idClaim.Value);
+            currentConversation = _conversationRepository.GetConversationById(conversationId, userId);
+
             if (currentConversation == null)
             {
+
                 return Page();
             }
-            if (!_conversationRepository.IsUserInConversation(conversationId, userId))
+
+
+            if (currentConversation == null)
             {
+                TempData["error"] = "You are no longer in this conversation";
                 return Page();
             }
             UserDto = _userRepository.GetUserDtoWithPhoto(userId);
@@ -225,7 +234,8 @@ namespace ChatSystem.Pages.Chat
                 return NotFound();
             }
 
-            GetConversationDetail(conversationId);
+            GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationId);
+            currentConversation = _conversationRepository.GetConversationById(conversationId);
 
             conversationDto = MapConversationToDto(currentConversation, UserDto.UserId);
 
@@ -252,13 +262,6 @@ namespace ChatSystem.Pages.Chat
 
             return conversationDto;
         }
-
-        private void GetConversationDetail(int conversationId)
-        {
-            GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationId);
-            currentConversation = _conversationRepository.GetConversationById(conversationId);
-        }
-
         public IActionResult OnPostPromoteUserToAdmin(int conversationId, int userId)
         {
             try
