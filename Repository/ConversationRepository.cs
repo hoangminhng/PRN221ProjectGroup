@@ -92,6 +92,11 @@ namespace Repository
             throw new NotImplementedException();
         }
 
+        public Conversation GetConversationById(int conversationId, int userId)
+        {
+            return ConversationDAO.Instance.GetConversationById(conversationId, userId);
+        }
+
         public Conversation GetConversationById(int conversationId)
         {
             return ConversationDAO.Instance.GetConversationById(conversationId);
@@ -107,26 +112,10 @@ namespace Repository
             return await ConversationDAO.Instance.GetUserGroupConversationsByUserId(userID);
         }
 
-        public bool IsUserInConversation(int conversationId, int userId)
-        {
-            bool result = false;
-
-            Conversation conversation = ConversationDAO.Instance.GetConversationAndParticipantById(conversationId);
-
-            foreach (var participant in conversation.Participants)
-            {
-                if (participant.UserId == userId)
-                {
-                    return true;
-                }
-            }
-
-            return result;
-        }
 
         public void UpdateConversation(Conversation conversation)
         => ConversationDAO.Instance.Update(conversation);
-        
+
         public void DeleteConversation(int conversationId)
         => ConversationDAO.Instance.DeleteConversation(conversationId);
     }
