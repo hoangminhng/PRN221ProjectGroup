@@ -26,11 +26,12 @@ namespace ChatSystem.Pages.Users
         public IActionResult OnGet(int UserId)
         {
             var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
+
             if (idClaim != null)
             {
                 IsLogined = true;
+                IsFriend = _userRepository.CheckFriendUser(int.Parse(idClaim.Value), UserId);
             }
-            int loginUserId = int.Parse(idClaim.Value);
 
             var user = _userRepository.GetUserWithPhoto(UserId);
             if (user == null)
@@ -40,8 +41,6 @@ namespace ChatSystem.Pages.Users
 
             if (user != null)
             {
-                IsFriend = _userRepository.CheckFriendUser(loginUserId, UserId);
-
                 UserProfile = new UserProfileDto
                 {
                     UserId = user.UserId,
