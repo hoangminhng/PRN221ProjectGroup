@@ -114,5 +114,17 @@ namespace DataAccessLayer
                 context.SaveChanges();
             }
         }
+
+        public Conversation GetConversationBySenderIdAndReceiverId(int senderId, int receiverId)
+        {
+            var context = new DataContext();
+
+            return context.Conversations
+            .Include(c => c.Participants)
+            .FirstOrDefault(c =>
+                c.Participants.Any(p => p.UserId == senderId) &&
+                c.Participants.Any(p => p.UserId == receiverId) &&
+                c.isGroup == false);
+        }
     }
 }

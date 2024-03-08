@@ -14,7 +14,6 @@
  *@        <div class="col-12 col-md-2 border-end chat-list" id="conversation-list">
             @if(Model.ConversationDtoList.Count < 1)
             {
-
             }else{
                 <script>
                     var conversationIdsString = [
@@ -172,7 +171,7 @@
                             <button type="button" class="btn btn-primary mt-3 edit-group-name" data-conversation-id="@Model.conversationDto.ConversationId">Edit group name</button>
                             <button type="button" class="btn btn-danger mt-3" 
                                     onclick="outGroupModal(@Model.conversationDto.ConversationId)">
-                                Out
+                                Quit
                             </button>
                         </div>
                     </div>
@@ -188,6 +187,7 @@
         
     </div>
 </div>
+
 
 
 
@@ -436,7 +436,7 @@
 </div>
 <!-- End invite memeber modal  -->
 
-<!-- Begin out group modal  -->
+<!-- Begin quit group modal  -->
 <div class="modal fade" id="outGroupModal" tabindex="-1" aria-labelledby="outGroupModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -461,7 +461,7 @@
                         You are the last member in this conversation, wanna out ??
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary" asp-page-handler="OutGroup">Out</button>
+                        <button type="submit" class="btn btn-primary" asp-page-handler="OutGroup">Quit</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>                   
                 }
@@ -471,7 +471,7 @@
                         Are you sure you want to out this conversation ??
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary" asp-page-handler="OutGroup">Out</button>
+                        <button type="submit" class="btn btn-primary" asp-page-handler="OutGroup">Quit</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 }
@@ -479,7 +479,7 @@
         </div>
     </div>
 </div>
-<!-- End out group modal  -->
+<!-- End quit group modal  -->
 
 <script>
     function showAddUserModal(conversationId) {

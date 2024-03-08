@@ -118,5 +118,10 @@ namespace Repository
 
         public void DeleteConversation(int conversationId)
         => ConversationDAO.Instance.DeleteConversation(conversationId);
+
+        public Conversation GetConversationBySenderIdAndReceiverId(int senderId, int receiverId)
+        {
+            return ConversationDAO.Instance.GetConversationBySenderIdAndReceiverId(senderId, receiverId);
+        }
     }
 }
