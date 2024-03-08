@@ -9,11 +9,13 @@ namespace ChatSystem.Pages.Users
     {
         private readonly IUserRepository _userRepository;
         private readonly IConversationRepository _conversationRepository;
+        private readonly IFriendRepository _friendRepository;
 
-        public UserProfileModel(IUserRepository userRepository, IConversationRepository conversationRepository)
+        public UserProfileModel(IUserRepository userRepository, IConversationRepository conversationRepository, IFriendRepository friendRepository)
         {
             _userRepository = userRepository;
             _conversationRepository = conversationRepository;
+            _friendRepository = friendRepository;
         }
 
         public UserProfileDto UserProfile { get; set; }
@@ -58,6 +60,19 @@ namespace ChatSystem.Pages.Users
             return Page();
         }
 
+        public IActionResult OnPostSendRequestAsync()
+        {
+            var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
+            if (idClaim != null)
+            {
+                var recipientUserName = _userRepository.GetUser(UserId).UserName;
+                var senderUserName = _userRepository.GetUser(int.Parse(idClaim.Value)).UserName;
+                _friendRepository.SendFriendRequest(int.Parse(idClaim.Value), UserId, senderUserName, recipientUserName);
+            }
+
+            return RedirectToPage("/Users/UserProfile", new { userId = UserId });
+        }
+
         public IActionResult OnPostStartConversationAsync()
         {
             var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
@@ -89,7 +104,8 @@ namespace ChatSystem.Pages.Users
                 {
                     new Participants { UserId = loginUserId, isAdmin = true, status = 1 },
                     new Participants { UserId = UserId, isAdmin = false, status = 1 }
-                }};
+                }
+                };
 
                 _conversationRepository.Create(newConversation);
 
