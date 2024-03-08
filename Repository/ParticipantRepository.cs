@@ -80,5 +80,10 @@ namespace Repository
 
             return participantCount == 1;
         }
+
+        public void DeleteParticipant(Participants participants)
+        {
+            ParticipantDAO.Instance.RemoveParticipant(participants);
+        }
     }
 }

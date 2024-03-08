@@ -50,5 +50,19 @@ namespace DataAccessLayer
             }
             return participants;
         }
+
+        public void RemoveParticipant(Participants participant)
+        {
+            using (var context = new DataContext())
+            {
+                var existingParticipant = context.Participants.Find(participant.ConversationId, participant.UserId);
+
+                if (existingParticipant != null)
+                {
+                    context.Participants.Remove(existingParticipant);
+                    context.SaveChanges();
+                }
+            }
+        }
     }
 }
