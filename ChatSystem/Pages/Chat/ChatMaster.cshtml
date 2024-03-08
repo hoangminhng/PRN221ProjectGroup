@@ -4,15 +4,15 @@
 }
 
 <link rel="stylesheet" href="~/css/chatMaster.css">
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<script src="~/js/signalr.js"></script>
 
 <div class="container chat-section" style="width: 1920px">
     <div class="row g-0">
 
 @*         <div class="container col-12 col-lg-5 col-xl-3 border-end chat-list">
- *@        <div class="col-12 col-md-2 border-end chat-list">
-           
-
-            @foreach (var conversationDtoMember in Model.ConversationDtoList)
+ *@        <div class="col-12 col-md-2 border-end chat-list" id="conversation-list">
+            @if(Model.ConversationDtoList.Count < 1)
             {
                 if (conversationDtoMember.isGroup)
                 {
@@ -50,6 +50,61 @@
                     <hr />
                 }
                 
+            }else{
+
+               
+
+                <script>
+                    var conversationIdsString = [
+                    @foreach (var conversationDtoMember in Model.ConversationDtoList)
+                    {
+                        // Output each ConversationId as a JavaScript string literal
+                        @: '@conversationDtoMember.ConversationId',
+                        
+                    }];
+
+                    // Now you have all ConversationIds in the conversationIds array
+                    var conversationIds = conversationIdsString.map(function (id) {
+                        return parseInt(id, 10);
+                    });
+
+                    console.log('Conversation IDs:', conversationIds);
+
+                    //send message
+                    "use strict";
+
+                    var connection = new signalR.HubConnectionBuilder().withUrl("/message").build();
+                    connection.start()
+                        .then(() => console.log("SignalR Connected"))
+                        .catch(err => console.error("SignalR Connection Error: ", err));
+
+                    connection.on("OnNeedToUploadConversationList", (conversationId, message) => {
+                        console.log("Load Converstaion List");
+                        if (conversationIds.includes(conversationId)) {
+                            console.log("Conversation ID matches:", conversationId);
+                            loadConversationList();
+                        }
+                    });
+
+                    function loadConversationList() {
+                        $.ajax({
+                            url: '/Chat/ChatMaster?handler=LoadConversationList',
+                            method: 'GET',
+                            success: function (data) {
+                                $('#conversation-list').html(data);
+                                console.log("Conversation list loaded successfully.");
+                            },
+                            error: function (err) {
+                                console.error('Failed to fetch message list:', err);
+                            }
+                        });
+                    }
+
+                </script>
+
+                @await Html.PartialAsync("_ChatConversationList", Model.ConversationDtoList)
+                
+
             }
             
             <hr class="d-block d-lg-none mt-1 mb-0" />
@@ -62,7 +117,40 @@
             </div>
         }
         else{
+            <script>
 
+                var connection = new signalR.HubConnectionBuilder().withUrl("/message").build();
+
+
+                connection.start().then(res => {
+                    connection.invoke("JoinGroup", "@Model.conversationDto.ConversationId") 
+                        .catch(err => {
+                            console.log(err);
+                        });
+                    }).catch (err => {
+                    console.log(err);
+                });;
+
+
+
+                connection.on("OnSendMessageInConversation", (conversationId, message) => {
+                    loadMessage(conversationId);
+                });
+
+                function loadMessage(conversationId) {
+                    $.ajax({
+                        url: '/Chat/ChatMaster?handler=LoadMessage&conversationId=' + conversationId,
+                        method: 'GET',
+                        success: function (data) {
+                            $('#all-chat-message').html(data);
+                            console.log("Messages loaded successfully.");
+                        },
+                        error: function (err) {
+                            console.error('Failed to fetch message list:', err);
+                        }
+                    });
+                }
+            </script>
 
             <div class="col-12 col-md-8">
                 @await Html.PartialAsync("_ChatHeader", Model.conversationDto)
@@ -146,6 +234,7 @@
 <script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
 <script src="~/js/OnlineStatus.js"></script>
 <script src="~/js/signalr.js"></script>
+
 <script>
     //String.prototype.nl2br = function () {
     //    return this.replace(/\r\n/g, "<br />");
@@ -186,38 +275,9 @@
 
     
 </script>
-<script>
-    //send message 
-    "use strict";
 
-    var connection = new signalR.HubConnectionBuilder().withUrl("/message").build();
 
-    connection.start()
-        .then(() => console.log("SignalR Connected"))
-        .catch(err => console.error("SignalR Connection Error: ", err));
 
-    connection.on("OnSendMessage", (conversationId, message) => {
-        console.log("success");
-        console.log(conversationId, message);
-        loadMessage(conversationId);
-    });
-
-    function loadMessage(conversationId) {
-        $.ajax({
-            url: '/Chat/ChatMaster?handler=LoadMessage&conversationId=' + conversationId,
-            method: 'GET',
-            success: function (data) {
-                console.log(data);
-                $('#all-chat-message').html(data);
-                console.log("Messages loaded successfully.");
-            },
-            error: function (err) {
-                console.error('Failed to fetch message list:', err);
-            }
-        });
-    }
-    
-</script>
 <script>
     // Function to handle click on "Promote"
     const handlePromoteParticipantClick = (event) => {
