@@ -17,7 +17,7 @@ connection.on("UserConnected", function (userId) {
     console.log("UserConnected:", userId);
     onlineUsers[userId] = true;
     updateStatusElement(userId);
-    // Update localStorage
+     Update localStorage
     localStorage.setItem("onlineUsers", JSON.stringify(onlineUsers));
     console.log("Online Users from localStorage:", onlineUsers);
 });
