@@ -1,7 +1,9 @@
 using BusinessObject;
+using ChatSystem.Hubs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.SignalR;
 using Repository;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
@@ -24,10 +26,12 @@ namespace ChatSystem.Pages.Account
     public class LoginModel : PageModel
     {
         private readonly IUserRepository _userRepository;
+        private readonly IHubContext<OnlineHub> _hubContext;
 
-        public LoginModel(IUserRepository userRepository)
+        public LoginModel(IUserRepository userRepository, IHubContext<OnlineHub> hubContext)
         {
             _userRepository = userRepository;
+            _hubContext = hubContext;
         }
 
         [BindProperty]
@@ -73,6 +77,9 @@ namespace ChatSystem.Pages.Account
 
                     await HttpContext.SignInAsync("CookieAuth", claimsPrincipal, authProperties);
                     HttpContext.Session.SetInt32("UserId", user.UserId);
+
+                    await _hubContext.Clients.All.SendAsync("UserConnected", user.UserId);
+
                     TempData["success"] = "Login Successful";
                     return RedirectToPage("/Users/UserList");
                 }

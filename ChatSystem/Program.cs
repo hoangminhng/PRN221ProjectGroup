@@ -81,5 +81,6 @@ app.MapRazorPages();
 
 app.UseSession();
 app.MapHub<NotificationHub>("/friendRequest");
+app.MapHub<OnlineHub>("/onlineHub");
 
 app.Run();
