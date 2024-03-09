@@ -176,7 +176,6 @@ namespace ChatSystem.Pages.Chat
             {
                 TempData["error"] = "You are no longer in this conversation";
                 conversationDto = null;
-
                 OnGet();
             }
             else
@@ -195,6 +194,7 @@ namespace ChatSystem.Pages.Chat
 
                 await _messageHubContext.Clients.Group(conversationDto.ConversationId.ToString()).SendAsync("OnSendMessageInConversation", conversationDto.ConversationId);
                 await _messageHubContext.Clients.All.SendAsync("OnNeedToUploadConversationList", conversationDto.ConversationId);
+
 
                 GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationDto.ConversationId);
 

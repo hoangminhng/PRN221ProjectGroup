@@ -5,6 +5,7 @@
 
 <link rel="stylesheet" href="~/css/chatMaster.css">
 <script src="~/lib/jquery/dist/jquery.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="~/js/signalr.js"></script>
 
 <div class="container chat-section" style="width: 1920px">
@@ -15,6 +16,8 @@
             @if(Model.ConversationDtoList.Count < 1)
             {
             }else{
+              
+
                 <script>
                     var conversationIdsString = [
                     @foreach (var conversationDtoMember in Model.ConversationDtoList)
@@ -23,6 +26,10 @@
                         @: '@conversationDtoMember.ConversationId',
                         
                     }];
+
+                    var conversationIdFromModelString = @((Model.conversationDto != null) ? Model.conversationDto.ConversationId : 0);
+                    var conversationIdFromModel = parseInt(conversationIdFromModelString);
+
 
                     // Now you have all ConversationIds in the conversationIds array
                     var conversationIds = conversationIdsString.map(function (id) {
@@ -42,8 +49,12 @@
                     connection.on("OnNeedToUploadConversationList", (conversationId, message) => {
                         console.log("Load Converstaion List");
                         if (conversationIds.includes(conversationId)) {
-                            console.log("Conversation ID matches:", conversationId);
+                            console.log("Conversation ID matches: ", conversationId);
                             loadConversationList();
+                            console.log("conversationIdFromModel: " + conversationIdFromModel);
+                            if (conversationIdFromModel != conversationId){
+                                toastr.success('You have new message')
+                            }
                         }
                     });
 
@@ -53,7 +64,7 @@
                             method: 'GET',
                             success: function (data) {
                                 $('#conversation-list').html(data);
-                                console.log("Conversation list loaded successfully.");
+                                
                             },
                             error: function (err) {
                                 console.error('Failed to fetch message list:', err);
