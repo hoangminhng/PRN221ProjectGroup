@@ -80,7 +80,6 @@ namespace ChatSystem.Pages.Account
 
                     await _hubContext.Clients.All.SendAsync("UserConnected", user.UserId);
 
-                    TempData["success"] = "Login Successful";
                     return RedirectToPage("/Users/UserList");
                 }
                 else

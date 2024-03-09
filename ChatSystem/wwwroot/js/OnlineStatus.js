@@ -1,6 +1,8 @@
-const connection = new signalR.HubConnectionBuilder().withUrl("/onlineHub").build();
+"use strict";
 
-const onlineUsers = JSON.parse(localStorage.getItem("onlineUsers")) || {};
+var connection = new signalR.HubConnectionBuilder().withUrl("/onlineHub").build();
+
+var onlineUsers = JSON.parse(localStorage.getItem("onlineUsers")) || {};
 
 function updateStatusElement(userId) {
     const element = document.getElementById("user_" + userId);
@@ -14,10 +16,11 @@ function updateStatusElement(userId) {
 }
 
 connection.on("UserConnected", function (userId) {
+    console.log("UserConnected work");
     console.log("UserConnected:", userId);
     onlineUsers[userId] = true;
     updateStatusElement(userId);
-     Update localStorage
+/*     Update localStorage*/
     localStorage.setItem("onlineUsers", JSON.stringify(onlineUsers));
     console.log("Online Users from localStorage:", onlineUsers);
 });
