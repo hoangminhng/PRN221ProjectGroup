@@ -5,6 +5,7 @@
 
 <link rel="stylesheet" href="~/css/chatMaster.css">
 <script src="~/lib/jquery/dist/jquery.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="~/js/signalr.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
@@ -17,6 +18,8 @@
             @if(Model.ConversationDtoList.Count < 1)
             {
             }else{
+              
+
                 <script>
                     var conversationIdsString = [
                     @foreach (var conversationDtoMember in Model.ConversationDtoList)
@@ -25,6 +28,10 @@
                         @: '@conversationDtoMember.ConversationId',
                         
                     }];
+
+                    var conversationIdFromModelString = @((Model.conversationDto != null) ? Model.conversationDto.ConversationId : 0);
+                    var conversationIdFromModel = parseInt(conversationIdFromModelString);
+
 
                     // Now you have all ConversationIds in the conversationIds array
                     var conversationIds = conversationIdsString.map(function (id) {
@@ -61,7 +68,7 @@
                             method: 'GET',
                             success: function (data) {
                                 $('#conversation-list').html(data);
-                                console.log("Conversation list loaded successfully.");
+                                
                             },
                             error: function (err) {
                                 console.error('Failed to fetch message list:', err);
