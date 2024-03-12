@@ -1,14 +1,18 @@
 ﻿using BusinessObject;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using DataAccessLayer;
 
 namespace Repository
 {
     public class ParticipantRepository : IParticipantRepository
     {
+
+        public User GetOtherParticipant(int conversationId, int userId)
+        {
+            User user = ParticipantDAO.Instance.GetOtherParticipantWhenNotGroupConversation(conversationId, userId);
+
+            return user;
+        }
+
         public void Create(Participants entity)
         {
             throw new NotImplementedException();
@@ -37,6 +41,49 @@ namespace Repository
         public bool Update(Participants entity)
         {
             throw new NotImplementedException();
+        }
+
+        public Participants GetParticipantByConversationIdAndUserId(int conversationId, int userId)
+        {
+            return ParticipantDAO.Instance.GetParticipantByConversationIdAndUserId(conversationId, userId);
+        }
+
+        public void UpdateParticipants(Participants participants)
+        => ParticipantDAO.Instance.Update(participants);
+        public void OutConversation(int conversationId, int userId)
+        {
+            var participant = ParticipantDAO.Instance.GetParticipantByConversationIdAndUserId(conversationId, userId);
+
+            if (participant != null)
+            {
+                ParticipantDAO.Instance.Remove(participant);
+            }
+        }
+
+        public bool IsLastAdminInConversation(int conversationId, int userId)
+        {
+            return ParticipantDAO.Instance
+                .GetAll()
+                .Count(p => p.ConversationId == conversationId && p.isAdmin) <= 1 &&
+                    ParticipantDAO.Instance
+                .GetAll()
+                .Any(p => p.UserId == userId &&
+                          p.ConversationId == conversationId &&
+                          p.isAdmin);
+        }
+
+        public bool IsLastMemberInConversation(int conversationId)
+        {
+            int participantCount = ParticipantDAO.Instance
+                .GetAll()
+                .Count(p => p.ConversationId == conversationId);
+
+            return participantCount == 1;
+        }
+
+        public void DeleteParticipant(Participants participants)
+        {
+            ParticipantDAO.Instance.RemoveParticipant(participants);
         }
     }
 }

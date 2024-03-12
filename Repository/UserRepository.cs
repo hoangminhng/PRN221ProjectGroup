@@ -67,5 +67,66 @@ namespace Repository
         {
             return UserDAO.Instance.IsUserNameValidForUpdate(userId, username);
         }
+
+        public List<UserDto> GetUserInGroupChat(int conversationId)
+        {
+            List<User> users = UserDAO.Instance.GetUserInGroupChat(conversationId);
+            List<UserDto> usersDto = new List<UserDto>();
+            foreach (User user in users)
+            {
+
+                UserDto userDto = new UserDto
+                {
+                    UserId = user.UserId,
+                    UserName = user.UserName,
+                    DateOfBirth = user.DateOfBirth,
+                    KnownAs = user.KnownAs,
+                    Gender = user.Gender,
+                    Introduction = user.Introduction,
+                    Interest = user.Interest,
+                    City = user.City,
+                    Avatar = user.photos.FirstOrDefault(p => p.isMain)?.PhotoUrl
+                };
+                if (!usersDto.Contains(userDto))
+                {
+                    usersDto.Add(userDto);
+                }
+            }
+
+            return usersDto;
+        }
+
+        public UserDto GetUserDtoWithPhoto(int userId)
+        {
+            User user = UserDAO.Instance.GetUser(userId);
+
+            return new UserDto
+            {
+                UserId = user.UserId,
+                UserName = user.UserName,
+                DateOfBirth = user.DateOfBirth,
+                KnownAs = user.KnownAs,
+                Gender = user.Gender,
+                Introduction = user.Introduction,
+                Interest = user.Interest,
+                City = user.City,
+                Avatar = user.photos.FirstOrDefault(p => p.isMain)?.PhotoUrl
+            };
+        }
+
+        public bool CheckFriendUser(int userId, int otherUserId)
+        {
+            List<Friend> friendList = FriendDAO.Instance.GetFriendsForUser(userId);
+
+            var friend = friendList.FirstOrDefault(l => l.RecipientId == otherUserId);
+
+            if (friend != null)
+            {
+                return true;
+            }
+            return false;
+        }
+
     }
 }
+

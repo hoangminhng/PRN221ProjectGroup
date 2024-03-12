@@ -1,18 +1,15 @@
 using AutoMapper;
 using BusinessObject;
-using ChatSystem.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.IdentityModel.Tokens;
 using Repository;
 using Repository.DTOs;
 
 namespace ChatSystem.Pages.Chat
 {
     [Authorize]
-    public class ChatMasterModel : PageModel
+    public class ChatMasterDuplicateModel : PageModel
     {
         private readonly IConversationRepository _conversationRepository;
         private readonly IParticipantRepository _participantRepository;
@@ -22,14 +19,13 @@ namespace ChatSystem.Pages.Chat
 
         private readonly IFriendRepository _friendRepository;
         private readonly IPhotoRepository _photoRepository;
-        private readonly IHubContext<MessageHub> _messageHubContext;
 
-        public ChatMasterModel(IConversationRepository conversationRepository,
+        public ChatMasterDuplicateModel(IConversationRepository conversationRepository,
             IParticipantRepository participantRepository,
             IUserRepository userRepository,
             IMapper mapper, IMessageRepository messageRepository,
             IFriendRepository friendRepository,
-            IPhotoRepository photoRepository, IHubContext<MessageHub> messageHubContext)
+            IPhotoRepository photoRepository)
         {
             _conversationRepository = conversationRepository;
             _participantRepository = participantRepository;
@@ -39,11 +35,9 @@ namespace ChatSystem.Pages.Chat
             _messageRepository = messageRepository;
             _friendRepository = friendRepository;
             _photoRepository = photoRepository;
-            _messageHubContext = messageHubContext;
         }
 
-        public List<UserDto> GroupChatParticipants
-        { get; set; }
+        public List<UserDto> GroupChatParticipants { get; set; }
         public Conversation currentConversation { get; set; }
         public UserDto UserDto { get; set; }
 
@@ -60,20 +54,10 @@ namespace ChatSystem.Pages.Chat
         public List<string> SelectedFriends { get; set; }
 
         [BindProperty]
-        public ChatContentModelDto ChatContentModel { get; set; }
-
-        public List<MessageDto> MessageDtoList { get; set; } = default!;
-
-        [BindProperty]
-        public string MessageContent { get; set; }
-
-        [BindProperty]
         public bool IsLastAdminLogined { get; set; } = false;
 
         [BindProperty]
         public bool IsLastMemberLogined { get; set; } = false;
-
-        //private Dictionary<int, UserDto> UserDtoDictionary { get; set; }
 
         public IActionResult OnGet()
         {
@@ -102,6 +86,7 @@ namespace ChatSystem.Pages.Chat
 
                     if (conversationId != null)
                     {
+
                         LoadConversation((int)conversationId);
                     }
 
@@ -120,53 +105,10 @@ namespace ChatSystem.Pages.Chat
 
         }
 
-        public IActionResult OnGetLoadConversationList()
+        public IActionResult LoadConversation(int conversationId)
         {
-            var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
-            int userId = int.Parse(idClaim.Value);
-
-            List<Conversation> conversationList = _conversationRepository.GetAllUserConversation(userId);
-            List<Conversation> conversationOrderList = conversationList.OrderByDescending(c => _messageRepository.GetLastestMessageFromConversation(c).DateSend.Ticks).ThenByDescending(c => c.CreateAt.Ticks).ToList();
-            //List<Conversation> conversationOrderList = conversationList.OrderByDescending(c => c.CreateAt.Ticks).ToList();
-
-            foreach (var conversation in conversationOrderList)
-            {
-                ConversationDto conversationDto = MapConversationToDto(conversation, userId);
-
-                ConversationDtoList.Add(conversationDto);
-            }
-
-            return Partial("_ChatConversationList", ConversationDtoList);
-        }
-
-        public IActionResult OnGetLoadMessage(int conversationId)
-        {
-            var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
-            int userId = int.Parse(idClaim.Value);
-
-            currentConversation = _conversationRepository.GetConversationById(conversationId, userId);
-
-            if (currentConversation == null)
-            {
-                TempData["error"] = "You are no longer in this conversation";
-                return Page();
-            }
-            GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationId);
 
 
-            UserDto = _userRepository.GetUserDtoWithPhoto(userId);
-            MessageDtoList = _messageRepository.GetMessagesFromConversation(currentConversation, GroupChatParticipants);
-            ChatContentModel = new ChatContentModelDto
-            {
-                MessageDtoList = MessageDtoList,
-                UserDto = UserDto
-            };
-
-            return Partial("_ChatContent", ChatContentModel);
-        }
-
-        public async Task OnPostSendMessage()
-        {
             var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
             int userId = int.Parse(idClaim.Value);
 
@@ -175,79 +117,41 @@ namespace ChatSystem.Pages.Chat
             if (currentConversation == null)
             {
                 TempData["error"] = "You are no longer in this conversation";
-                conversationDto = null;
-                OnGet();
-            }
-            else
-            {
-                if (!MessageContent.IsNullOrEmpty())
-                {
-                    Message message = new Message();
-
-                    message.ConversationId = conversationDto.ConversationId;
-                    message.SenderId = userId;
-                    message.SenderDelete = false;
-                    message.Content = MessageContent;
-
-                    _messageRepository.Create(message);
-                }
-
-                await _messageHubContext.Clients.Group(conversationDto.ConversationId.ToString()).SendAsync("OnSendMessageInConversation", conversationDto.ConversationId);
-                await _messageHubContext.Clients.All.SendAsync("OnNeedToUploadConversationList", conversationDto.ConversationId);
-
-
-                GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationDto.ConversationId);
-
-
-                UserDto = _userRepository.GetUserDtoWithPhoto(userId);
-                GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationDto.ConversationId);
-                MessageDtoList = _messageRepository.GetMessagesFromConversation(currentConversation, GroupChatParticipants);
-                ChatContentModel = new ChatContentModelDto
-                {
-                    MessageDtoList = MessageDtoList,
-                    UserDto = UserDto
-                };
-            }
-        }
-
-        public IActionResult LoadConversation(int conversationId)
-        {
-            var idClaim = User.Claims.FirstOrDefault(claims => claims.Type == "UserId", null);
-            int userId = int.Parse(idClaim.Value);
-            currentConversation = _conversationRepository.GetConversationById(conversationId, userId);
-
-            if (currentConversation == null)
-            {
-
                 return Page();
             }
 
 
-            if (currentConversation == null)
-            {
-                TempData["error"] = "You are no longer in this conversation";
-                return Page();
-            }
-            UserDto = _userRepository.GetUserDtoWithPhoto(userId);
-            if (UserDto == null)
+            var user = _userRepository.GetUserWithPhoto(userId);
+            if (user == null)
             {
                 return NotFound();
             }
 
-            GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationId);
-            currentConversation = _conversationRepository.GetConversationById(conversationId);
+
+            UserDto = new UserDto
+            {
+                UserId = user.UserId,
+                UserName = user.UserName,
+                DateOfBirth = user.DateOfBirth,
+                KnownAs = user.KnownAs,
+                Gender = user.Gender,
+                Introduction = user.Introduction,
+                Interest = user.Interest,
+                City = user.City,
+                Avatar = user.photos.FirstOrDefault(p => p.isMain)?.PhotoUrl
+            };
+
+
+
+
+            GetConversationDetail(conversationId);
 
             conversationDto = MapConversationToDto(currentConversation, UserDto.UserId);
 
-            MessageDtoList = _messageRepository.GetMessagesFromConversation(currentConversation, GroupChatParticipants);
-            ChatContentModel = new ChatContentModelDto
-            {
-                MessageDtoList = MessageDtoList,
-                UserDto = UserDto
-            };
 
             return Page();
         }
+
 
         private ConversationDto MapConversationToDto(Conversation conversation, int userId)
         {
@@ -262,6 +166,14 @@ namespace ChatSystem.Pages.Chat
 
             return conversationDto;
         }
+
+
+        private void GetConversationDetail(int conversationId)
+        {
+            GroupChatParticipants = _userRepository.GetUserInGroupChat(conversationId);
+            currentConversation = _conversationRepository.GetConversationById(conversationId);
+        }
+
         public IActionResult OnPostPromoteUserToAdmin(int conversationId, int userId)
         {
             try
@@ -276,12 +188,12 @@ namespace ChatSystem.Pages.Chat
                     _participantRepository.UpdateParticipants(participant);
                 }
                 TempData["success"] = "Update Successful";
-                return RedirectToPage("/Chat/ChatMaster", new { id = conversationId });
+                return RedirectToPage("/Chat/ChatMasterDuplicate", new { id = conversationId });
             }
             catch (Exception ex)
             {
                 TempData["error"] = "Have an error " + ex.Message + " , try again";
-                return RedirectToPage("/Chat/ChatMaster", new { id = conversationId });
+                return LoadConversation(conversationId);
             }
         }
 
@@ -293,15 +205,17 @@ namespace ChatSystem.Pages.Chat
 
                 if (participant != null)
                 {
-                    _participantRepository.DeleteParticipant(participant);
+                    participant.status = 0;
+
+                    _participantRepository.UpdateParticipants(participant);
                 }
                 TempData["success"] = "User kicked from the group successfully.";
-                return RedirectToPage("/Chat/ChatMaster", new { id = conversationId });
+                return RedirectToPage("/Chat/ChatMasterDuplicate", new { id = conversationId });
             }
             catch (Exception ex)
             {
                 TempData["error"] = "An error occurred while kicking the user: " + ex.Message;
-                return RedirectToPage("/Chat/ChatMaster", new { id = conversationId });
+                return LoadConversation(conversationId);
             }
         }
 
@@ -318,12 +232,12 @@ namespace ChatSystem.Pages.Chat
                     _conversationRepository.UpdateConversation(conversation);
                 }
                 TempData["success"] = "Group Name Updated Successfully";
-                return RedirectToPage("/Chat/ChatMaster", new { id = conversationId });
+                return RedirectToPage("/Chat/ChatMasterDuplicate", new { id = conversationId });
             }
             catch (Exception ex)
             {
                 TempData["error"] = "An error occurred: " + ex.Message + ". Please try again.";
-                return RedirectToPage("/Chat/ChatMaster", new { id = conversationId });
+                return LoadConversation(conversationId);
             }
         }
 
@@ -333,12 +247,12 @@ namespace ChatSystem.Pages.Chat
             {
                 _conversationRepository.DeleteConversation(conversationId);
                 TempData["success"] = "Delete Group Successfully";
-                return RedirectToPage("/Chat/ChatMaster", new { id = conversationId });
+                return RedirectToPage("/Chat/ChatMasterDuplicate", new { id = conversationId });
             }
             catch (Exception ex)
             {
                 TempData["error"] = "An error occurred: " + ex.Message + ". Please try again.";
-                return RedirectToPage("/Chat/ChatMaster", new { id = conversationId });
+                return LoadConversation(conversationId);
             }
         }
 
@@ -381,7 +295,7 @@ namespace ChatSystem.Pages.Chat
                 _conversationRepository.AddUserToGroup(userId, conversationId, SelectedFriends);
                 TempData["success"] = "Invite Successful";
 
-                return RedirectToPage("/Chat/ChatMaster", new { id = conversationId });
+                return RedirectToPage("/Chat/ChatMasterDuplicate", new { id = conversationId });
             }
             catch (Exception ex)
             {
@@ -407,12 +321,12 @@ namespace ChatSystem.Pages.Chat
                 _participantRepository.OutConversation(conversationId, userId);
                 if (IsLastMemberLogined)
                 {
-                    _conversationRepository.DeleteConversation(conversationId);
+                    // Add method for delete conversation here
                 }
 
-                TempData["success"] = "Bye bye, see you again!";
+                TempData["success"] = "Out Successful";
 
-                return RedirectToPage("/Chat/ChatMaster");
+                return RedirectToPage("/Chat/ChatMasterDuplicate");
             }
             catch (Exception ex)
             {

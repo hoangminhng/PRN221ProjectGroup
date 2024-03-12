@@ -1,86 +1,56 @@
 ﻿@page 
-@model ChatSystem.Pages.Chat.ChatMasterModel
+@model ChatSystem.Pages.Chat.ChatMasterDuplicateModel
 @{
 }
-
-<link rel="stylesheet" href="~/css/chatMaster.css">
-<script src="~/lib/jquery/dist/jquery.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-<script src="~/js/signalr.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-
-
-<div class="container chat-section" style="width: 1920px">
+<div class="container chat-section">
     <div class="row g-0">
 
 @*         <div class="container col-12 col-lg-5 col-xl-3 border-end chat-list">
- *@        <div class="col-12 col-md-2 border-end chat-list" id="conversation-list">
-            @if(Model.ConversationDtoList.Count < 1)
+ *@        <div class="col-12 col-md-3 border-end chat-list">
+            <div class="px-4 d-none d-md-block">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1 search-box">
+                        <input type="text" class="form-control my-3" placeholder="Search..." />
+                    </div>
+                </div>
+            </div>
+
+            @foreach (var conversationDtoMember in Model.ConversationDtoList)
             {
-            }else{
-              
-
-                <script>
-                    var conversationIdsString = [
-                    @foreach (var conversationDtoMember in Model.ConversationDtoList)
-                    {
-                        // Output each ConversationId as a JavaScript string literal
-                        @: '@conversationDtoMember.ConversationId',
-                        
-                    }];
-
-                    var conversationIdFromModelString = @((Model.conversationDto != null) ? Model.conversationDto.ConversationId : 0);
-                    var conversationIdFromModel = parseInt(conversationIdFromModelString);
+                if (conversationDtoMember.isGroup)
+                {
 
 
-                    // Now you have all ConversationIds in the conversationIds array
-                    var conversationIds = conversationIdsString.map(function (id) {
-                        return parseInt(id, 10);
-                    });
+                    <a asp-page="/Chat/ChatMasterDuplicate" asp-route-id="@conversationDtoMember.ConversationId"
+                        class="list-group-item list-group-item-action border-0">
+                        <div class="badge bg-success float-end">5</div> 
+                        <div class="d-flex align-items-start">
+                                <img src="https://bootdey.com/img/Content/avatar/avatar5.png" class="rounded-circle me-1" alt="@conversationDtoMember.ConversationName" width="40" height="40" />
+                            <div class="flex-grow-1 ms-3">
+                                    @conversationDtoMember.ConversationName
+                                <div class="small"><span class="fas fa-circle chat-online"></span> Online</div>
+                            </div>
+                        </div>
+                    </a>
+                 
+                }
+                else
+                {
 
-                    //send message
-                    "use strict";
-
-                    var conversationIdFromModelString = @((Model.conversationDto != null) ? Model.conversationDto.ConversationId : 0);
-                    var conversationIdFromModel = parseInt(conversationIdFromModelString, 10);
-
-                    var connection = new signalR.HubConnectionBuilder().withUrl("/message").build();
-                    connection.start()
-                        .then(() => console.log("SignalR Connected"))
-                        .catch(err => console.error("SignalR Connection Error: ", err));
-
-                    connection.on("OnNeedToUploadConversationList", (conversationId, message) => {
-                        console.log("Load Converstaion List");
-                        if (conversationIds.includes(conversationId)) {
-                            console.log("Conversation ID matches: ", conversationId);
-                            loadConversationList();
-                            console.log("conversationIdFromModel: " + conversationIdFromModel);
-                            if (conversationIdFromModel != conversationId) {
-                                console.log("new message here! toaster should appear");
-                                toastr.success('You have new message')
-                            }   
-                        }
-                    });
-
-                    function loadConversationList() {
-                        $.ajax({
-                            url: '/Chat/ChatMaster?handler=LoadConversationList',
-                            method: 'GET',
-                            success: function (data) {
-                                $('#conversation-list').html(data);
-                                
-                            },
-                            error: function (err) {
-                                console.error('Failed to fetch message list:', err);
-                            }
-                        });
-                    }
-
-                </script>
-
-                @await Html.PartialAsync("_ChatConversationList", Model.ConversationDtoList)
+                    <a asp-page="/Chat/ChatMasterDuplicate" asp-route-id="@conversationDtoMember.ConversationId"
+                        class="list-group-item list-group-item-action border-0">
+                        <div class="badge bg-success float-end">5</div>
+                        <div class="d-flex align-items-start">
+                                <img src="@conversationDtoMember.Avatar" class="rounded-circle me-1" alt="@conversationDtoMember.OtherUserId" width="40" height="40" />
+                            <div class="flex-grow-1 ms-3">
+                                    @conversationDtoMember.OtherUserName
+                                <div class="small"><span class="fas fa-circle chat-online"></span> Online</div>
+                            </div>
+                        </div>
+                    </a>
+                   
+                }
                 
-
             }
             
             <hr class="d-block d-lg-none mt-1 mb-0" />
@@ -93,66 +63,65 @@
             </div>
         }
         else{
-            <script>
-
-                var connection = new signalR.HubConnectionBuilder().withUrl("/message").build();
 
 
-                connection.start().then(res => {
-                    connection.invoke("JoinGroup", "@Model.conversationDto.ConversationId") 
-                        .catch(err => {
-                            console.log(err);
-                        });
-                    }).catch (err => {
-                    console.log(err);
-                });;
-
-
-
-                connection.on("OnSendMessageInConversation", (conversationId, message) => {
-                    loadMessage(conversationId);
-                });
-
-                function loadMessage(conversationId) {
-                    $.ajax({
-                        url: '/Chat/ChatMaster?handler=LoadMessage&conversationId=' + conversationId,
-                        method: 'GET',
-                        success: function (data) {
-                            $('#all-chat-message').html(data);
-                            console.log("Messages loaded successfully.");
-                        },
-                        error: function (err) {
-                            console.error('Failed to fetch message list:', err);
-                        }
-                    });
+            <div class="col-12 col-md-7">
+                @if (Model.conversationDto.isGroup)
+                {
+                    <div class="py-2 px-4 border-bottom d-none d-lg-block">
+                        <div class="d-flex align-items-center py-1">
+                            <div class="position-relative">
+                                <img src="https://bootdey.com/img/Content/avatar/avatar5.png" class="rounded-circle me-1" alt="@Model.conversationDto.ConversationName" width="40" height="40" />
+                            </div>
+                            <div class="flex-grow-1 ps-3">
+                                <strong>@Model.conversationDto.ConversationName</strong>
+                                <div class="text-muted small"><em>Typing...</em></div>
+                            </div>
+                        </div>
+                    </div>
                 }
-            </script>
+                else
+                {
+                    <div class="py-2 px-4 border-bottom d-none d-lg-block">
+                        <div class="d-flex align-items-center py-1">
+                            <div class="position-relative">
+                                <img src="@Model.conversationDto.Avatar" class="rounded-circle me-1" alt="@Model.conversationDto.OtherUserName" width="40" height="40" />
+                            </div>
+                            <div class="flex-grow-1 ps-3">
+                                <strong>@Model.conversationDto.OtherUserName</strong>
+                                <div class="text-muted small"><em>Typing...</em></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                
 
-            <div class="col-12 col-md-8">
-                @await Html.PartialAsync("_ChatHeader", Model.conversationDto)
-
-            <div class="chat-messages-section p-4">
-                <div class="all-chat-message" id="all-chat-message">
-                     @await Html.PartialAsync("_ChatContent", Model.ChatContentModel)
-                </div>
+            
+                <div class="chat-messages-section p-4">
+                    <div class="all-chat-message">
+                    <div class="chat-message-left pb-4">
+                        <div>
+                            <img src="https://bootdey.com/img/Content/avatar/avatar3.png" class="rounded-circle me-1" alt="Sharon Lessman" width="40" height="40" />
+                            <div class="text-muted small text-nowrap mt-2">2:42 am</div>
+                        </div>
+                        <div class="flex-shrink-1 bg-light rounded py-2 px-3 ms-3">
+                            <div class="fw-bold mb-1">Sharon Lessman</div>
+                            Sed pulvinar, massa vitae interdum pulvinar, risus lectus porttitor magna, vitae commodo lectus mauris et velit. Proin ultricies placerat imperdiet. Morbi varius quam
+                            ac venenatis tempus.
+                            </div>
+                        </div>
+                    </div>
 
                 <div class="flex-grow-0 py-3 px-4 border-top">
-                    <form method="post" asp-page-handler="SendMessage" id="sendMessageForm">
-                        <input type="hidden" asp-for="conversationDto.ConversationId"/>
-                        <div class="input-group">
-                                <textarea asp-for="@Model.MessageContent" id="messageTextArea" type="text" class="form-control" placeholder="Type your message" rows="2"></textarea>
-                            
-                            <button id="sendBtn" type="submit" class="btn btn-primary">Send</button>
-                        </div>
-                    </form>
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Type your message" />
+                        <button class="btn btn-primary">Send</button>
+                    </div>
                 </div>
             </div>
-
-
-
         </div>
-        
-      
+
+
             <div class="col-12 col-md-2">
                 @if (Model.conversationDto.isGroup)
                 {
@@ -178,161 +147,111 @@
                                 </li>
 
                             }
-                            <button type="button" class="btn btn-primary mt-3"
-                                    onclick="showAddUserModal(@Model.conversationDto.ConversationId)">
+                            <button type="button" class="btn btn-primary mt-3" 
+                            onclick="showAddUserModal(@Model.conversationDto.ConversationId)">
                                 Invite
                             </button>
                             <button type="button" class="btn btn-primary mt-3 delete-group" data-conversation-id="@Model.conversationDto.ConversationId">Delete group</button>
                             <button type="button" class="btn btn-primary mt-3 edit-group-name" data-conversation-id="@Model.conversationDto.ConversationId">Edit group name</button>
+                            <button type="button" class="btn btn-primary mt-3">Delete Group</button>
+                            <button type="button" class="btn btn-primary mt-3" id="editGroupButton">Edit Group Name</button>
                             <button type="button" class="btn btn-danger mt-3" 
-                                    onclick="outGroupModal(@Model.conversationDto.ConversationId)">
-                                Quit
+                            onclick="outGroupModal(@Model.conversationDto.ConversationId)">
+                                Out
                             </button>
                         </div>
                     </div>
 
-                }
+                } 
                 else
                 {
-
+                    
                 }
-
+                
             </div>
         }
         
     </div>
-</div>
+    <script>
+        // Function to handle click on "Promote"
+        const handlePromoteParticipantClick = (event) => {
+            event.preventDefault();
 
+            const participantId = parseInt(event.target.dataset.participantId);
+            const conversationId = parseInt(event.target.dataset.conversationId);
 
+            document.getElementById('conversationIdInput').value = conversationId;
+            document.getElementById('userIdInput').value = participantId;
 
+            $("#promoteConfirmationModal").modal("show");
+        };
 
-<script src="~/lib/jquery/dist/jquery.js"></script>
-<script src="~/lib/signalr/dist/browser/signalr.js"></script>
-<script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
-<script src="~/js/OnlineStatus.js"></script>
-<script src="~/js/signalr.js"></script>
-
-<script>
-    //String.prototype.nl2br = function () {
-    //    return this.replace(/\r\n/g, "<br />");
-    //}
-
-    $(function () {
-        // Handle form submission on Enter key press
-        $("textarea").keypress(function (event) {
-            if (event.keyCode == 13 && !event.shiftKey) {
-                $("#sendMessageForm").submit(); // Submit the form when Enter key is pressed
-                return false; // Prevent default form submission
+        document.addEventListener("click", (event) => {
+            if (event.target.classList.contains("promote-participant")) {
+                handlePromoteParticipantClick(event);
             }
         });
 
-         //Handle form submission
-        $('#sendMessageForm').submit(function (event) {
-            event.preventDefault(); 
-            var formData = $(this).serialize();  
 
-          
-            $.ajax({
-                url: '/Chat/ChatMaster?handler=SendMessage', 
-                method: 'POST',
-                data: formData, 
-                success: function (data) {
-     
-                    console.log("Message sent successfully");
-                
-                    $("#messageTextArea").val('');
-                },
-                error: function (err) {
-                    console.error('Failed to send message:', err);
-                }
-            });
+
+        // Function to handle click events on kick participant links
+        const handleKickParticipantClick = (event) => {
+            event.preventDefault();
+
+            const participantId = parseInt(event.target.dataset.participantId);
+            const conversationId = parseInt(event.target.dataset.conversationId);
+
+            document.getElementById('conversationId').value = conversationId;
+            document.getElementById('userId').value = participantId;
+
+            $("#kickConfirmationModal").modal("show");
+        };
+
+        document.addEventListener("click", (event) => {
+            if (event.target.classList.contains("kick-participant")) {
+                handleKickParticipantClick(event);
+            }
         });
-    });
 
 
-    
-</script>
+        //show Edit Modal
 
+        const handleEditGroupNameClick = (event) => {
+            event.preventDefault();
 
+            const conversationId = parseInt(event.target.dataset.conversationId);
 
-<script>
-    // Function to handle click on "Promote"
-    const handlePromoteParticipantClick = (event) => {
-        event.preventDefault();
+            document.getElementById('conversationIdGroup').value = conversationId;
 
-        const participantId = parseInt(event.target.dataset.participantId);
-        const conversationId = parseInt(event.target.dataset.conversationId);
+            $('#editGroupModal').modal('show');
+        };
 
-        document.getElementById('conversationIdInput').value = conversationId;
-        document.getElementById('userIdInput').value = participantId;
+        document.addEventListener("click", (event) => {
+            if (event.target.classList.contains("edit-group-name")) {
+                handleEditGroupNameClick(event);
+            }
+        });
 
-        $("#promoteConfirmationModal").modal("show");
-    };
+        //show delete Modal
+        const handleDeleteGroupClick = (event) => {
+            event.preventDefault();
 
-    document.addEventListener("click", (event) => {
-        if (event.target.classList.contains("promote-participant")) {
-            handlePromoteParticipantClick(event);
-        }
-    });
+            const conversationId = parseInt(event.target.dataset.conversationId);
 
+            document.getElementById('conversationIdDelete').value = conversationId;
 
+            $('#deleteGroupModal').modal('show');
+        };
 
-    // Function to handle click events on kick participant links
-    const handleKickParticipantClick = (event) => {
-        event.preventDefault();
+        document.addEventListener("click", (event) => {
+            if (event.target.classList.contains("delete-group")) {
+                handleDeleteGroupClick(event);
+            }
+        });
 
-        const participantId = parseInt(event.target.dataset.participantId);
-        const conversationId = parseInt(event.target.dataset.conversationId);
+    </script>
 
-        document.getElementById('conversationId').value = conversationId;
-        document.getElementById('userId').value = participantId;
-
-        $("#kickConfirmationModal").modal("show");
-    };
-
-    document.addEventListener("click", (event) => {
-        if (event.target.classList.contains("kick-participant")) {
-            handleKickParticipantClick(event);
-        }
-    });
-
-
-    //show Edit Modal
-
-    const handleEditGroupNameClick = (event) => {
-        event.preventDefault();
-
-        const conversationId = parseInt(event.target.dataset.conversationId);
-
-        document.getElementById('conversationIdGroup').value = conversationId;
-
-        $('#editGroupModal').modal('show');
-    };
-
-    document.addEventListener("click", (event) => {
-        if (event.target.classList.contains("edit-group-name")) {
-            handleEditGroupNameClick(event);
-        }
-    });
-
-    //show delete Modal
-    const handleDeleteGroupClick = (event) => {
-        event.preventDefault();
-
-        const conversationId = parseInt(event.target.dataset.conversationId);
-
-        document.getElementById('conversationIdDelete').value = conversationId;
-
-        $('#deleteGroupModal').modal('show');
-    };
-
-    document.addEventListener("click", (event) => {
-        if (event.target.classList.contains("delete-group")) {
-            handleDeleteGroupClick(event);
-        }
-    });
-
-</script>
+</div>
 
 <div class="modal fade" id="promoteConfirmationModal" tabindex="-1" aria-labelledby="promoteConfirmationModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -435,7 +354,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-                <input type="hidden" id="conversationIdInviteGroup" name="conversationId" />
+                <input type="hidden" id="conversationIdInput" name="conversationId" />
                 <div id="friendListContainer">
                     <input type="hidden" asp-for="SelectedFriends" id="selectedFriendsInput"/>
                     <!--  -->
@@ -451,7 +370,7 @@
 </div>
 <!-- End invite memeber modal  -->
 
-<!-- Begin quit group modal  -->
+<!-- Begin out group modal  -->
 <div class="modal fade" id="outGroupModal" tabindex="-1" aria-labelledby="outGroupModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -476,7 +395,7 @@
                         You are the last member in this conversation, wanna out ??
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary" asp-page-handler="OutGroup">Quit</button>
+                        <button type="submit" class="btn btn-primary" asp-page-handler="OutGroup">Out</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>                   
                 }
@@ -486,7 +405,7 @@
                         Are you sure you want to out this conversation ??
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary" asp-page-handler="OutGroup">Quit</button>
+                        <button type="submit" class="btn btn-primary" asp-page-handler="OutGroup">Out</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 }
@@ -494,17 +413,17 @@
         </div>
     </div>
 </div>
-<!-- End quit group modal  -->
+<!-- End out group modal  -->
 
 <script>
     function showAddUserModal(conversationId) {
-        document.getElementById('conversationIdInviteGroup').value = conversationId;
+        document.getElementById('conversationIdInput').value = conversationId;
         $('#addUserModal').modal('show');
 
-        $('#conversationIdInviteGroup').val(conversationId);
+        $('#conversationIdInput').val(conversationId);
         console.log(conversationId);
 
-        $('#friendListContainer').load('/Chat/ChatMaster?handler=FriendListPartial&conversationId=' + conversationId);
+        $('#friendListContainer').load('/Chat/ChatMasterDuplicate?handler=FriendListPartial&conversationId=' + conversationId);
         console.log("LOADED");
     }
 
@@ -554,4 +473,85 @@
 
     </script>
 }
-    
+
+
+<style>
+    html, body {
+        margin: 0;
+        height: 120%;
+        overflow: hidden
+    }
+
+
+
+	.chat-online {
+		color: #34ce57
+	}
+
+	.chat-offline {
+		color: #e4606d
+	}
+
+
+    .chat-list{
+        max-height: 80vh;
+        overflow-y: scroll
+    }   
+    .chat-list > * {
+        margin: 20px 0;
+        padding: 0 10px;
+    }
+
+    .chat-list > *:first-child {
+        margin-top: 0px;
+    }
+
+	.chat-messages-section {
+		display: flex;
+		flex-direction: column;
+		max-height: 80vh;
+		overflow: hidden;
+        padding-bottom: 10px
+	}
+    .all-chat-message{
+        grid-column: 2;
+        grid-row: 2;
+        overflow-y: scroll;
+        align-content: end;
+        display: flex;
+        flex-direction: column-reverse;
+    }
+
+	.chat-message-left,
+	.chat-message-right {
+		display: flex;
+		flex-shrink: 0
+	}
+
+	.chat-message-left {
+		margin-right: auto
+	}
+
+	.chat-message-right {
+		flex-direction: row-reverse;
+		margin-left: auto
+	}
+
+	.py-3 {
+		padding-top: 1rem !important;
+		padding-bottom: 1rem !important;
+	}
+
+	.px-4 {
+		padding-right: 1.5rem !important;
+		padding-left: 1.5rem !important;
+	}
+
+	.flex-grow-0 {
+		flex-grow: 0 !important;
+	}
+
+	.border-top {
+		border-top: 1px solid #dee2e6 !important;
+	}
+</style>

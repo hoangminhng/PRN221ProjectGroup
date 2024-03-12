@@ -1,10 +1,5 @@
 ﻿using BusinessObject;
 using DataAccessLayer;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Repository
 {
@@ -23,6 +18,7 @@ namespace Repository
                 UserId = creatorId,
                 CreateAt = DateTime.Now,
                 isGroup = true,
+                MessagesReceived = new List<Message>(),
                 Participants = new List<Participants>()
             };
 
@@ -45,6 +41,31 @@ namespace Repository
             ConversationDAO.Instance.Create(conversation);
         }
 
+        public void AddUserToGroup(int creatorId, int conversationId, List<string> memberIdList)
+        {
+            var currentConversation = ConversationDAO.Instance.GetConversationById(conversationId);
+
+            var conversation = new Conversation
+            {
+                ConversationId = conversationId,
+                ConversationName = currentConversation.ConversationName,
+                UserId = creatorId,
+                CreateAt = DateTime.Now,
+                isGroup = true,
+                Participants = new List<Participants>()
+            };
+
+            conversation.Participants.AddRange(memberIdList.Select(friendId => new Participants
+            {
+                UserId = int.Parse(friendId),
+                status = 1,
+                isAdmin = false,
+                Conversation = conversation
+            }));
+
+            ConversationDAO.Instance.Update(conversation);
+        }
+
         public bool Delete(Conversation entity)
         {
             throw new NotImplementedException();
@@ -52,7 +73,13 @@ namespace Repository
 
         public List<Conversation> GetAll()
         {
-            throw new NotImplementedException();
+            return (List<Conversation>)ConversationDAO.Instance.GetAll();
+        }
+
+        public List<Conversation> GetAllUserConversation(int userId)
+        {
+            List<Conversation> list = ConversationDAO.Instance.GetConverstationsOfUser(userId);
+            return list;
         }
 
         public Conversation GetById(int entityId)
@@ -65,9 +92,36 @@ namespace Repository
             throw new NotImplementedException();
         }
 
+        public Conversation GetConversationById(int conversationId, int userId)
+        {
+            return ConversationDAO.Instance.GetConversationById(conversationId, userId);
+        }
+
+        public Conversation GetConversationById(int conversationId)
+        {
+            return ConversationDAO.Instance.GetConversationById(conversationId);
+        }
+
         public bool Update(Conversation entity)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<List<Conversation>> GetAllConversationById(int userID)
+        {
+            return await ConversationDAO.Instance.GetUserGroupConversationsByUserId(userID);
+        }
+
+
+        public void UpdateConversation(Conversation conversation)
+        => ConversationDAO.Instance.Update(conversation);
+
+        public void DeleteConversation(int conversationId)
+        => ConversationDAO.Instance.DeleteConversation(conversationId);
+
+        public Conversation GetConversationBySenderIdAndReceiverId(int senderId, int receiverId)
+        {
+            return ConversationDAO.Instance.GetConversationBySenderIdAndReceiverId(senderId, receiverId);
         }
     }
 }

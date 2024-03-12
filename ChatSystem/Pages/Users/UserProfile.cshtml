@@ -14,7 +14,7 @@
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item">
                             <a class="text-dark" asp-area="" asp-page="/Users/UserList">People</a>
-                         </li>
+                        </li>
                         <li class="breadcrumb-item active" aria-current="page">@Model.UserProfile.UserName</li>
                     </ol>
                 </nav>
@@ -42,11 +42,18 @@
             <div class="row mt-4">
                 <div class="col-lg-11 mx-auto">
                     <div class="nav nav-pills justify-content-end">
-                        @if (Model.IsLogined)
+                        @if (Model.IsLogined && !Model.IsFriend)
                         {
-                            <form method="post">
-                                 <input type="hidden" name="userId" value="@Model.UserProfile.UserId" />
-                                 <button type="submit" name="addFriend" value="@Model.UserProfile.UserId" class="btn btn-outline-primary">Add Friend</button>
+                            <form method="post" asp-page-handler="SendRequest">
+                                <input type="hidden" name="userId" value="@Model.UserProfile.UserId" />
+                                <button type="submit" id="addFriend" name="addFriend" value="@Model.UserProfile.UserId" class="btn btn-outline-primary">Add Friend</button>
+                            </form>
+                        }
+                        else if (Model.IsLogined && Model.IsFriend)
+                        {
+                            <form method="post" asp-page-handler="StartConversation">
+                                <input type="hidden" name="UserId" value="@Model.UserProfile.UserId" />
+                                <button type="submit" class="btn btn-outline-primary">Chat</button>
                             </form>
                         }
                     </div>
@@ -103,3 +110,7 @@
         </div>
     </div>
 </div>
+
+
+<script src="~/js/signalr.js"></script>
+<script src="~/js/SendFriendRequestNotification.js"></script>
